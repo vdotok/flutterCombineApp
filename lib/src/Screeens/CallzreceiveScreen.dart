@@ -1,0 +1,232 @@
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
+import 'package:provider/provider.dart';
+import 'package:vdkFlutterChat/src/Screeens/home/home.dart';
+import 'package:vdkFlutterChat/src/Screeens/home/streams/remoteStream.dart';
+import 'package:vdkFlutterChat/src/constants/constant.dart';
+import 'package:vdkFlutterChat/src/core/models/contactList.dart';
+import 'package:vdkFlutterChat/src/core/providers/auth.dart';
+import 'package:vdkFlutterChat/src/core/providers/call_provider.dart';
+import 'package:vdkFlutterChat/src/core/providers/contact_provider.dart';
+import 'package:vdkFlutterChat/src/core/providers/groupListProvider.dart';
+import 'package:vdotok_stream/vdotok_stream.dart';
+
+
+
+class CallReceiveScreen extends StatefulWidget {
+  final mediaType;
+  final localRenderer;
+  final incomingfrom;
+  final authtoken;
+  final registerRes;
+  final CallProvider callProvider;
+  final AuthProvider authProvider;
+  final VoidCallback stopRinging;
+  final SignalingClient signalingClient;
+  final ContactList contactList;
+  final from;
+// final rendererListWithRefID;
+  const CallReceiveScreen(
+      {Key key,
+      this.mediaType,
+      this.localRenderer,
+      this.incomingfrom,
+      this.registerRes,
+      this.stopRinging,
+      this.signalingClient,
+      this.authtoken,
+      this.contactList,
+      this.callProvider,
+      this.authProvider,
+      this.from, 
+      })
+      : super(key: key);
+  @override
+  _CallReceiveScreenState createState() => _CallReceiveScreenState();
+}
+
+class _CallReceiveScreenState extends State<CallReceiveScreen> {
+  String callername = "";
+  int index = 0;
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+
+    print("authtoken ${widget.authtoken}");
+
+    print("DNVJDNVJDNVJDNVJDVNJDVN ${widget.contactList}");
+    index = widget.contactList.users
+        .indexWhere((element) => element.ref_id == widget.incomingfrom);
+    callername = widget.contactList.users[index].full_name;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    print(
+        "incoming isssrthrhgfgg ${ widget.mediaType}");
+    // return Consumer2<AuthProvider, CallProvider>(
+    //     builder: (context, authProvider, callProvider, child) {
+   
+  
+    return Scaffold(body: OrientationBuilder(builder: (context, orientation) {
+      return Stack(children: <Widget>[
+        widget.mediaType == "video"
+            ? Container(
+                child: RemoteStream(
+                remoteRenderer: rendererListWithRefID[0]["rtcVideoRenderer"],
+              ))
+            : Container(
+                decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                  colors: [
+                    backgroundAudioCallDark,
+                    backgroundAudioCallLight,
+                    backgroundAudioCallLight,
+                    backgroundAudioCallLight,
+                  ],
+                  begin: Alignment.topCenter,
+                  end: Alignment(0.0, 0.0),
+                )),
+                child: Center(
+                  child: SvgPicture.asset(
+                    'assets/userIconCall.svg',
+                  ),
+                ),
+              ),
+        Container(
+          padding: EdgeInsets.only(top: 120),
+          alignment: Alignment.center,
+          child: Column(
+            // mainAxisAlignment: MainAxisAlignment.center,
+            // crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text(
+                "Incoming Call from",
+                style: TextStyle(
+                    fontSize: 14,
+                    decoration: TextDecoration.none,
+                    fontFamily: secondaryFontFamily,
+                    fontWeight: FontWeight.w400,
+                    fontStyle: FontStyle.normal,
+                    color: darkBlackColor),
+              ),
+              SizedBox(
+                height: 8,
+              ),
+             Text(
+                    
+                           callername,
+                         
+                      style: TextStyle(
+                          fontFamily: primaryFontFamily,
+                          color: darkBlackColor,
+                          decoration: TextDecoration.none,
+                          fontWeight: FontWeight.w700,
+                          fontStyle: FontStyle.normal,
+                          fontSize: 24),
+                   
+                    
+                
+              ),
+            ],
+          ),
+        ),
+        Container(
+          padding: EdgeInsets.only(
+            bottom: 56,
+          ),
+          alignment: Alignment.bottomCenter,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              GestureDetector(
+                child: SvgPicture.asset(
+                  'assets/end.svg',
+                ),
+                onTap: () {
+                  widget.stopRinging();
+                  widget.signalingClient.onDeclineCall(
+                      widget.authProvider.getUser.ref_id, widget.registerRes["mcToken"]);
+                  // _callBloc.add(CallNewEvent());
+                  widget.callProvider.initial();
+                  // signalingClient.onDeclineCall(widget.registerUser);
+                  // setState(() {
+                  //   _isCalling = false;
+                  // });
+                },
+              ),
+              SizedBox(width: 64),
+              GestureDetector(
+                child: SvgPicture.asset(
+                  'assets/Accept.svg',
+                ),
+                onTap: () {
+                  widget.stopRinging();
+                  widget.signalingClient.createAnswer(widget.incomingfrom);
+                  Navigator.pop(context);
+                  widget.callProvider.callStart();
+                  // setState(() {
+                  //   _isCalling = true;
+                  //   incomingfrom = null;
+                  // });
+                  // FlutterRingtonePlayer.stop();
+                  // Vibration.cancel();
+                },
+              ),
+            ],
+          ),
+        ),
+      ]);
+    }));
+    //   floatingActionButton: Padding(
+    //     padding: const EdgeInsets.only(bottom: 70),
+    //     child: Row(
+    //       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+    //       children: <Widget>[
+    //         Container(
+    //           // width: 80,
+    //           // height: 80,
+    //           child: FloatingActionButton(
+    //             backgroundColor: redColor,
+    //             onPressed: () {
+    //               stopRinging();
+    //               signalingClient.onDeclineCall(_auth.getUser.ref_id);
+    //               // _callBloc.add(CallNewEvent());
+    //               _callProvider.initial();
+    //               // signalingClient.onDeclineCall(widget.registerUser);
+    //               // setState(() {
+    //               //   _isCalling = false;
+    //               // });
+    //             },
+    //             child: Icon(Icons.clear),
+    //           ),
+    //         ),
+    //         Container(
+    //           // width: 80,
+    //           // height: 80,
+    //           child: FloatingActionButton(
+    //             backgroundColor: Colors.green,
+    //             onPressed: () {
+    //               stopRinging();
+    //               signalingClient.createAnswer(incomingfrom);
+    //               // setState(() {
+    //               //   _isCalling = true;
+    //               //   incomingfrom = null;
+    //               // });
+    //               // FlutterRingtonePlayer.stop();
+    //               // Vibration.cancel();
+    //             },
+    //             child: Icon(Icons.phone),
+    //           ),
+    //         )
+    //       ],
+    //     ),
+    //   ),
+    //   floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+    // );
+  }
+
+ 
+}
